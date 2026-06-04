@@ -1,0 +1,31 @@
+---
+alwaysApply: true
+---
+# Mobile First Layout Rule
+
+description: >
+  All pages and components in this application must be designed with a mobile-first layout approach.
+  This means that, by default, all user-facing features, components, and pages are optimized for mobile devices
+  (small screens) as the primary design target.
+  An exception to this rule is the admin module, which may use a different layout approach as required.
+
+rule:
+  - When creating new pages or components, always start with a mobile (small screen) design.
+  - Ensure layouts, navigation, and interactions prioritize mobile usability and responsiveness.
+  - Only the admin module is exempt from this mobile-first requirement.
+  - Do not introduce desktop-first designs outside the admin section.
+  - Review all designs and code changes for compliance with the mobile-first principle before merging or deploying.
+
+applies_to:
+  - All frontend code (components, pages, stylesheets) except the admin module.
+  - All team members and contributors.
+
+examples:
+  - ✅ Creating a new profile page component with mobile screen breakpoints and touch-friendly controls.
+  - ❌ Making a new dashboard page that is only usable on desktop screens (outside admin).
+
+enforcement:
+  - Reviewers must check for mobile-first design in code reviews.
+  - Any violations should be flagged and revised before merge.
+
+# End of Rule
