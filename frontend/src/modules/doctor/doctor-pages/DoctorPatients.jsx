@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { 
   getPatientQueue, 
   getPatientById, 
@@ -243,6 +244,7 @@ const DoctorPatients = () => {
   const navigate = useNavigate()
   const toast = useToast()
   const isDashboardPage = location.pathname === '/doctor/dashboard' || location.pathname === '/doctor/'
+  const queryClient = useQueryClient()
   
    // Debug log
   
@@ -251,155 +253,106 @@ const DoctorPatients = () => {
   
   // Appointments state - loaded from API
   const [appointments, setAppointments] = useState([])
-  const [loadingAppointments, setLoadingAppointments] = useState(true)
-  const [appointmentsError, setAppointmentsError] = useState(null)
   
   // Session state
   const [currentSession, setCurrentSession] = useState(null)
-  const [loadingSession, setLoadingSession] = useState(true)
   
-  // Fetch appointments from API
+  const todayStr = getTodayDateString()
+  
+  const { data: queueResponseData, isLoading: loadingAppointments, error: queryError } = useQuery({
+    queryKey: ['patientQueue', todayStr],
+    queryFn: async () => {
+      const response = await getPatientQueue(todayStr)
+      if (!response || !response.success || !response.data) {
+        throw new Error(response?.message || 'Failed to load appointments')
+      }
+      return response.data
+    },
+    enabled: location.pathname === '/doctor/patients' || isDashboardPage,
+  })
+
+  const appointmentsError = queryError ? queryError.message : null
+  const loadingSession = loadingAppointments
+
+  // Sync React Query data to local state
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        setLoadingAppointments(true)
-        setLoadingSession(true)
-        setAppointmentsError(null)
-        
-        // Get today's date in YYYY-MM-DD format
-        const todayStr = getTodayDateString()
-        
-         // Debug log
-        
-        const response = await getPatientQueue(todayStr)
-        
-         // Debug log
-        
-        if (response && response.success && response.data) {
-          // Backend returns: { session: {...}, appointments: [...], currentToken: 0 }
-          const sessionData = response.data.session || null
-          const queueData = response.data.appointments || response.data.queue || []
-          
-           // Debug log
-          
-          // Set session data
-          if (sessionData) {
-            const sessionToSet = {
-              id: sessionData._id || sessionData.id,
-              _id: sessionData._id || sessionData.id,
-              date: sessionData.date,
-              startTime: sessionData.sessionStartTime || sessionData.startTime,
-              endTime: sessionData.sessionEndTime || sessionData.endTime,
-              status: sessionData.status || 'scheduled',
-              currentToken: sessionData.currentToken || response.data.currentToken || 0,
-              maxTokens: sessionData.maxTokens || 0,
-              averageConsultationMinutes: sessionData.averageConsultationMinutes || getAverageConsultationMinutes(),
-              startedAt: sessionData.startedAt,
-              endedAt: sessionData.endedAt,
-            }
-             // Debug log
-            setCurrentSession(sessionToSet)
-          } else {
-             // Debug log
-            setCurrentSession(null)
-            // Clear any cached session data
-            localStorage.removeItem('doctorCurrentSession')
-          }
-          
-          // Transform API data to match component structure
-          const transformedAppointments = Array.isArray(queueData) ? queueData.map((appt) => ({
-            id: appt._id || appt.id,
-            _id: appt._id || appt.id,
-            patientId: appt.patientId?._id || appt.patientId || appt.patientId?.id,
-            patientName: appt.patientId?.firstName && appt.patientId?.lastName
-              ? `${appt.patientId.firstName} ${appt.patientId.lastName}`
-              : appt.patientId?.name || appt.patientName || 'Patient',
-            age: appt.patientId?.age || appt.age || 0,
-            gender: appt.patientId?.gender || appt.gender || 'unknown',
-            appointmentTime: (() => {
-              // Properly format appointment time
-              if (appt.appointmentTime) {
-                return appt.appointmentTime
-              }
-              if (appt.appointmentDate && appt.time) {
-                // Convert 12-hour time to 24-hour for ISO format
-                const convertTo24Hour = (time12) => {
-                  if (!time12) return '00:00'
-                  if (time12.includes('AM') || time12.includes('PM')) {
-                    const [time, period] = time12.split(' ')
-                    const [hours, minutes] = time.split(':').map(Number)
-                    let hour24 = hours
-                    if (period === 'PM' && hours !== 12) hour24 = hours + 12
-                    if (period === 'AM' && hours === 12) hour24 = 0
-                    return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-                  }
-                  return time12
-                }
-                const time24 = convertTo24Hour(appt.time)
-                const dateStr = appt.appointmentDate instanceof Date 
-                  ? appt.appointmentDate.toISOString().split('T')[0]
-                  : appt.appointmentDate.split('T')[0]
-                return `${dateStr}T${time24}:00`
-              }
-              return new Date().toISOString()
-            })(),
-            appointmentDate: appt.appointmentDate || appt.date,
-            appointmentType: appt.appointmentType || appt.type || 'New',
-            consultationMode: appt.consultationMode || 'in_person', // Add consultation mode
-            status: appt.status || 'waiting',
-            queueStatus: appt.queueStatus || appt.status || 'waiting',
-            queueNumber: appt.tokenNumber || appt.queueNumber || 0,
-            recallCount: appt.recallCount || 0,
-            reason: appt.reason || appt.chiefComplaint || 'Consultation',
-            time: appt.time, // Store the time field directly
-            patientImage: appt.patientId?.profileImage || appt.patientId?.image || appt.patientImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(appt.patientId?.firstName || 'Patient')}&background=3b82f6&color=fff&size=160`,
-            originalData: appt,
-          })) : []
-          
-           // Debug log
-          
-          setAppointments(transformedAppointments)
-        } else {
-          console.error('❌ Invalid API response:', response) // Debug log
-          setAppointments([])
-          setCurrentSession(null)
-        }
-      } catch (error) {
-        console.error('❌ Error fetching appointments:', error)
-        const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load appointments'
-        setAppointmentsError(errorMessage)
-        try {
-          if (toast && typeof toast.error === 'function') {
-            toast.error(errorMessage)
-          }
-        } catch (toastError) {
-          console.error('Error showing toast:', toastError)
-        }
-        setAppointments([])
+    if (queueResponseData) {
+      const sessionData = queueResponseData.session || null
+      const queueData = queueResponseData.appointments || queueResponseData.queue || []
+      
+      if (sessionData) {
+        setCurrentSession({
+          id: sessionData._id || sessionData.id,
+          _id: sessionData._id || sessionData.id,
+          date: sessionData.date,
+          startTime: sessionData.sessionStartTime || sessionData.startTime,
+          endTime: sessionData.sessionEndTime || sessionData.endTime,
+          status: sessionData.status || 'scheduled',
+          currentToken: sessionData.currentToken || queueResponseData.currentToken || 0,
+          maxTokens: sessionData.maxTokens || 0,
+          averageConsultationMinutes: sessionData.averageConsultationMinutes || getAverageConsultationMinutes(),
+          startedAt: sessionData.startedAt,
+          endedAt: sessionData.endedAt,
+        })
+      } else {
         setCurrentSession(null)
-      } finally {
-        setLoadingAppointments(false)
-        setLoadingSession(false)
+        localStorage.removeItem('doctorCurrentSession')
       }
+      
+      const transformedAppointments = Array.isArray(queueData) ? queueData.map((appt) => ({
+        id: appt._id || appt.id,
+        _id: appt._id || appt.id,
+        patientId: appt.patientId?._id || appt.patientId || appt.patientId?.id,
+        patientName: appt.patientId?.firstName && appt.patientId?.lastName
+          ? `${appt.patientId.firstName} ${appt.patientId.lastName}`
+          : appt.patientId?.name || appt.patientName || 'Patient',
+        age: appt.patientId?.age || appt.age || 0,
+        gender: appt.patientId?.gender || appt.gender || 'unknown',
+        appointmentTime: (() => {
+          if (appt.appointmentTime) return appt.appointmentTime
+          if (appt.appointmentDate && appt.time) {
+            const convertTo24Hour = (time12) => {
+              if (!time12) return '00:00'
+              if (time12.includes('AM') || time12.includes('PM')) {
+                const [time, period] = time12.split(' ')
+                const [hours, minutes] = time.split(':').map(Number)
+                let hour24 = hours
+                if (period === 'PM' && hours !== 12) hour24 = hours + 12
+                if (period === 'AM' && hours === 12) hour24 = 0
+                return `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+              }
+              return time12
+            }
+            const time24 = convertTo24Hour(appt.time)
+            const dateStr = appt.appointmentDate instanceof Date 
+              ? appt.appointmentDate.toISOString().split('T')[0]
+              : appt.appointmentDate.split('T')[0]
+            return `${dateStr}T${time24}:00`
+          }
+          return new Date().toISOString()
+        })(),
+        appointmentDate: appt.appointmentDate || appt.date,
+        appointmentType: appt.appointmentType || appt.type || 'New',
+        consultationMode: appt.consultationMode || 'in_person',
+        status: appt.status || 'waiting',
+        queueStatus: appt.queueStatus || appt.status || 'waiting',
+        queueNumber: appt.tokenNumber || appt.queueNumber || 0,
+        recallCount: appt.recallCount || 0,
+        reason: appt.reason || appt.chiefComplaint || 'Consultation',
+        time: appt.time,
+        patientImage: appt.patientId?.profileImage || appt.patientId?.image || appt.patientImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(appt.patientId?.firstName || 'Patient')}&background=3b82f6&color=fff&size=160`,
+        originalData: appt,
+      })) : []
+      
+      setAppointments(transformedAppointments)
+    } else if (queryError) {
+      setAppointments([])
+      setCurrentSession(null)
     }
-    
-    // Always fetch when on patients page
-    if (location.pathname === '/doctor/patients' || isDashboardPage) {
-      fetchAppointments()
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchAppointments, 30000)
-      return () => {
-        clearInterval(interval)
-      }
-    } else {
-      // If not on patients page, still set loading to false
-      setLoadingAppointments(false)
-      setLoadingSession(false)
-    }
-  }, [location.pathname, isDashboardPage]) // Removed toast from dependencies to avoid re-renders
+  }, [queueResponseData, queryError])
   
   // Reload appointments when navigating back to this page
-  // Appointments are already fetched in the main useEffect above
+  // Appointments are already fetched by useQuery
   
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedPatient, setSelectedPatient] = useState(null)
@@ -737,7 +690,7 @@ const DoctorPatients = () => {
   // Calculate max tokens for current session
   const maxTokens = currentSession ? currentSession.maxTokens : 0
 
-  const filteredAppointments = appointments.filter((appt) => {
+  const filteredAppointments = useMemo(() => appointments.filter((appt) => {
     try {
       // Filter by session date if session exists
       if (currentSession && currentSession.date) {
@@ -774,7 +727,7 @@ const DoctorPatients = () => {
       console.error('Error filtering appointment:', error, appt)
       return false
     }
-  })
+  }), [appointments, currentSession, searchTerm])
 
   // Helper function to determine which buttons to show for an appointment
   const getAppointmentButtons = (appointment, sessionStatus) => {

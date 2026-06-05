@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getDoctorProfile, updateDoctorProfile, getSupportHistory, uploadProfileImage, uploadSignature } from '../doctor-services/doctorService'
 import { useToast } from '../../../contexts/ToastContext'
 import DoctorPersonalInformation from '../doctor-components/profile/DoctorPersonalInformation'
@@ -115,10 +116,10 @@ const DoctorProfile = () => {
   const location = useLocation()
   const toast = useToast()
   const isDashboardPage = location.pathname === '/doctor/dashboard' || location.pathname === '/doctor/'
+  const queryClient = useQueryClient()
 
   const [isEditing, setIsEditing] = useState(false)
   const [activeSection, setActiveSection] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const languageInputRef = useRef(null)
   // Store stable averageConsultationMinutes value to prevent it from changing unexpectedly
@@ -167,144 +168,89 @@ const DoctorProfile = () => {
     isActive: true,
   })
 
-  // Fetch doctor profile from backend
-  useEffect(() => {
-    const fetchDoctorProfile = async () => {
-      const token = getAuthToken('doctor')
-      if (!token) {
-        setIsLoading(false)
-        return
+  // Fetch doctor profile using React Query
+  const token = getAuthToken('doctor')
+  
+  const { data: queryProfileData, isLoading: isLoadingQuery } = useQuery({
+    queryKey: ['doctorProfile'],
+    queryFn: async () => {
+      const response = await getDoctorProfile()
+      if (!response || !response.success || !response.data) {
+        throw new Error(response?.message || 'Failed to load profile data')
       }
-
-      try {
-        setIsLoading(true)
-
-        // Try to load from cache first for faster initial render
-        const storage = localStorage.getItem('doctorAuthToken') ? localStorage : sessionStorage
-        const cachedProfile = JSON.parse(storage.getItem('doctorProfile') || '{}')
-        if (Object.keys(cachedProfile).length > 0) {
-          // Set initial form data from cache
-          const cachedData = {
-            firstName: cachedProfile.firstName || '',
-            lastName: cachedProfile.lastName || '',
-            email: cachedProfile.email || '',
-            phone: cachedProfile.phone || '',
-            gender: cachedProfile.gender || '',
-            profileImage: normalizeImageUrl(cachedProfile.profileImage || cachedProfile.documents?.profileImage || ''),
-            specialization: cachedProfile.specialization || '',
-            licenseNumber: cachedProfile.licenseNumber || '',
-            experienceYears: cachedProfile.experienceYears || 0,
-            qualification: cachedProfile.qualification || '',
-            bio: cachedProfile.bio || '',
-            consultationFee: cachedProfile.consultationFee || 0,
-            education: Array.isArray(cachedProfile.education) ? cachedProfile.education : [],
-            languages: Array.isArray(cachedProfile.languages) ? cachedProfile.languages : [],
-            consultationModes: Array.isArray(cachedProfile.consultationModes) ? cachedProfile.consultationModes : [],
-            clinicDetails: cachedProfile.clinicDetails || {
-              name: '',
-              address: {
-                line1: '',
-                line2: '',
-                city: '',
-                state: '',
-                postalCode: '',
-                country: '',
-              },
-            },
-            availableTimings: Array.isArray(cachedProfile.availableTimings) ? cachedProfile.availableTimings : [],
-            availability: Array.isArray(cachedProfile.availability) ? cachedProfile.availability : [],
-            averageConsultationMinutes: cachedProfile.averageConsultationMinutes || 20,
-            documents: cachedProfile.documents || {},
-            digitalSignature: cachedProfile.digitalSignature ? {
-              imageUrl: normalizeImageUrl(cachedProfile.digitalSignature.imageUrl || ''),
-              uploadedAt: cachedProfile.digitalSignature.uploadedAt || null,
-            } : {
-              imageUrl: '',
-              uploadedAt: null,
-            },
-            status: cachedProfile.status || 'pending',
-            rating: cachedProfile.rating || 0,
-            isActive: cachedProfile.isActive !== undefined ? cachedProfile.isActive : true,
-          }
-          setFormData(cachedData)
-          // Store stable value
-          setStableAverageConsultationMinutes(cachedProfile.averageConsultationMinutes || 20)
-        }
-
-        // Then fetch fresh data from backend
-        const response = await getDoctorProfile()
-        if (response.success && response.data) {
-          const doctor = response.data.doctor || response.data
-
-          // Transform backend data to frontend format
-          const transformedData = {
-            firstName: doctor.firstName || '',
-            lastName: doctor.lastName || '',
-            email: doctor.email || '',
-            phone: doctor.phone || '',
-            gender: doctor.gender || '',
-            profileImage: normalizeImageUrl(doctor.profileImage || doctor.documents?.profileImage || ''),
-            specialization: doctor.specialization || '',
-            licenseNumber: doctor.licenseNumber || '',
-            experienceYears: doctor.experienceYears || 0,
-            qualification: doctor.qualification || '',
-            bio: doctor.bio || '',
-            consultationFee: doctor.consultationFee || 0,
-            education: Array.isArray(doctor.education) ? doctor.education : [],
-            languages: Array.isArray(doctor.languages) ? doctor.languages : [],
-            consultationModes: Array.isArray(doctor.consultationModes) ? doctor.consultationModes : [],
-            clinicDetails: doctor.clinicDetails || {
-              name: '',
-              address: {
-                line1: '',
-                line2: '',
-                city: '',
-                state: '',
-                postalCode: '',
-                country: '',
-              },
-            },
-            availableTimings: Array.isArray(doctor.availableTimings) ? doctor.availableTimings : [],
-            availability: Array.isArray(doctor.availability)
-              ? doctor.availability.map(avail => ({
-                ...avail,
-                // Convert 12-hour format from database to 24-hour format for time inputs
-                startTime: convert12HourTo24Hour(avail.startTime),
-                endTime: convert12HourTo24Hour(avail.endTime),
-              }))
-              : [],
-            averageConsultationMinutes: doctor.averageConsultationMinutes || 20,
-            documents: doctor.documents && Array.isArray(doctor.documents) ? doctor.documents : [],
-            digitalSignature: doctor.digitalSignature ? {
-              imageUrl: normalizeImageUrl(doctor.digitalSignature.imageUrl || ''),
-              uploadedAt: doctor.digitalSignature.uploadedAt || null,
-            } : {
-              imageUrl: '',
-              uploadedAt: null,
-            },
-            status: doctor.status || 'pending',
-            rating: doctor.rating || 0,
-            isActive: doctor.isActive !== undefined ? doctor.isActive : true,
-          }
-
-          setFormData(transformedData)
-          // Store stable value from backend
-          setStableAverageConsultationMinutes(doctor.averageConsultationMinutes || 20)
-
-          // Update cache
-          const storage = localStorage.getItem('doctorAuthToken') ? localStorage : sessionStorage
-          storage.setItem('doctorProfile', JSON.stringify(doctor))
-        }
-      } catch (error) {
-        console.error('Error fetching doctor profile:', error)
-        toast.error('Failed to load profile data. Please refresh the page.')
-      } finally {
-        setIsLoading(false)
-      }
+      return response.data.doctor || response.data
+    },
+    enabled: !!token,
+    onError: (error) => {
+      console.error('Error fetching doctor profile:', error)
+      toast.error('Failed to load profile data. Please refresh the page.')
     }
+  })
 
-    fetchDoctorProfile()
-  }, [])
+  const isLoading = isLoadingQuery
+
+  useEffect(() => {
+    if (queryProfileData) {
+      const doctor = queryProfileData
+      
+      const transformedData = {
+        firstName: doctor.firstName || '',
+        lastName: doctor.lastName || '',
+        email: doctor.email || '',
+        phone: doctor.phone || '',
+        gender: doctor.gender || '',
+        profileImage: normalizeImageUrl(doctor.profileImage || doctor.documents?.profileImage || ''),
+        specialization: doctor.specialization || '',
+        licenseNumber: doctor.licenseNumber || '',
+        experienceYears: doctor.experienceYears || 0,
+        qualification: doctor.qualification || '',
+        bio: doctor.bio || '',
+        consultationFee: doctor.consultationFee || 0,
+        education: Array.isArray(doctor.education) ? doctor.education : [],
+        languages: Array.isArray(doctor.languages) ? doctor.languages : [],
+        consultationModes: Array.isArray(doctor.consultationModes) ? doctor.consultationModes : [],
+        clinicDetails: doctor.clinicDetails || {
+          name: '',
+          address: {
+            line1: '',
+            line2: '',
+            city: '',
+            state: '',
+            postalCode: '',
+            country: '',
+          },
+        },
+        availableTimings: Array.isArray(doctor.availableTimings) ? doctor.availableTimings : [],
+        availability: Array.isArray(doctor.availability)
+          ? doctor.availability.map(avail => ({
+            ...avail,
+            // Convert 12-hour format from database to 24-hour format for time inputs
+            startTime: convert12HourTo24Hour(avail.startTime),
+            endTime: convert12HourTo24Hour(avail.endTime),
+          }))
+          : [],
+        averageConsultationMinutes: doctor.averageConsultationMinutes || 20,
+        documents: doctor.documents && Array.isArray(doctor.documents) ? doctor.documents : [],
+        digitalSignature: doctor.digitalSignature ? {
+          imageUrl: normalizeImageUrl(doctor.digitalSignature.imageUrl || ''),
+          uploadedAt: doctor.digitalSignature.uploadedAt || null,
+        } : {
+          imageUrl: '',
+          uploadedAt: null,
+        },
+        status: doctor.status || 'pending',
+        rating: doctor.rating || 0,
+        isActive: doctor.isActive !== undefined ? doctor.isActive : true,
+      }
+
+      setFormData(transformedData)
+      setStableAverageConsultationMinutes(doctor.averageConsultationMinutes || 20)
+
+      // Keep localStorage updated for fallback where components might check it directly
+      const storage = localStorage.getItem('doctorAuthToken') ? localStorage : sessionStorage
+      storage.setItem('doctorProfile', JSON.stringify(doctor))
+    }
+  }, [queryProfileData])
 
   const formatDate = (dateString) => {
     if (!dateString) return '—'
