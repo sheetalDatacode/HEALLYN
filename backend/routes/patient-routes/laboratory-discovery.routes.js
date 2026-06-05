@@ -63,6 +63,23 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/laboratories/tests/all
+router.get('/tests/all', asyncHandler(async (req, res) => {
+  const Test = require('../../models/Test');
+  const { limit } = req.query;
+  const numLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
+  const tests = await Test.find({ isActive: true })
+    .populate('laboratoryId', 'labName')
+    .sort({ createdAt: -1 })
+    .limit(numLimit);
+
+  return res.status(200).json({
+    success: true,
+    data: tests,
+  });
+}));
+
 // GET /api/laboratories/:id
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;

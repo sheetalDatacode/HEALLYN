@@ -39,6 +39,7 @@ import PatientOrderDetails from './modules/patient/patient-pages/PatientOrderDet
 import PatientSupport from './modules/patient/patient-pages/PatientSupport'
 import PatientHistory from './modules/patient/patient-pages/PatientHistory'
 import PatientCare from './modules/patient/patient-pages/PatientCare'
+import ArticleDetail from './modules/patient/patient-pages/ArticleDetail'
 import NotificationsPage from './modules/shared/NotificationsPage'
 import CallPopup from './modules/shared/CallPopup'
 import IncomingCallNotification from './modules/shared/IncomingCallNotification'
@@ -143,6 +144,7 @@ import AdminAppointments from './modules/admin/admin-pages/AdminAppointments'
 import AdminOrders from './modules/admin/admin-pages/AdminOrders'
 import AdminRequests from './modules/admin/admin-pages/AdminRequests'
 import AdminSettings from './modules/admin/admin-pages/AdminSettings'
+import AdminBlogs from './modules/admin/admin-pages/AdminBlogs'
 import ProtectedRoute from './components/ProtectedRoute'
 import WebNavbar from './modules/website/web-components/WebNavbar'
 import Home from './modules/website/web-pages/Home'
@@ -193,6 +195,7 @@ function PatientRoutes() {
           <Route path="/orders" element={<ProtectedRoute module="patient"><PatientOrders /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute module="patient"><PatientOrderDetails /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute module="patient"><PatientHistory /></ProtectedRoute>} />
+          <Route path="/articles/:id" element={<ProtectedRoute module="patient"><ArticleDetail /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute module="patient"><PatientSupport /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute module="patient"><NotificationsPage /></ProtectedRoute>} />
           <Route path="*" element={
@@ -248,6 +251,7 @@ function AdminRoutes() {
           <Route path="/profile" element={<ProtectedRoute module="admin"><AdminProfile /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute module="admin"><AdminSupport /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute module="admin"><AdminSettings /></ProtectedRoute>} />
+          <Route path="/blogs" element={<ProtectedRoute module="admin"><AdminBlogs /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute module="admin"><NotificationsPage /></ProtectedRoute>} />
 
           {/* Catch-all - redirect to login if not authenticated */}

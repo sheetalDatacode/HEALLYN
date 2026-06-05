@@ -226,6 +226,10 @@ app.use(
   "/api/patients/notifications",
   require("./routes/patient-routes/notification.routes")
 );
+app.use(
+  "/api/patients/blogs",
+  require("./routes/patient-routes/blog.routes")
+);
 
 // Doctor Routes (Profile is handled in auth.routes.js)
 app.use(
@@ -396,6 +400,10 @@ app.use(
 app.use(
   "/api/admin/notifications",
   require("./routes/admin-routes/notification.routes")
+);
+app.use(
+  "/api/admin/blogs",
+  require("./routes/admin-routes/blog.routes")
 );
 
 // Public Routes (Discovery)

@@ -29,6 +29,7 @@ const sidebarNavItems = [
   { id: 'orders', label: 'Orders', to: '/admin/orders', Icon: IoBagHandleOutline },
   { id: 'wallet', label: 'Wallet', to: '/admin/wallet', Icon: IoWalletOutline },
   { id: 'support', label: 'Support', to: '/admin/support', Icon: IoHelpCircleOutline },
+  { id: 'blogs', label: 'Blogs', to: '/admin/blogs', Icon: IoDocumentTextOutline },
   { id: 'settings', label: 'Settings', to: '/admin/settings', Icon: IoSettingsOutline },
 ]
 

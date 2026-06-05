@@ -688,3 +688,59 @@ export const getPatientReviews = async (filters = {}) => {
   }
 }
 
+/**
+ * Get all tests globally
+ * @param {object} filters - Filter options
+ * @returns {Promise<object>} Tests data
+ */
+export const getAllTests = async (filters = {}) => {
+  try {
+    return await apiClient.get('/laboratories/tests/all', filters)
+  } catch (error) {
+    console.error('Error fetching all tests:', error)
+    throw error
+  }
+}
+
+/**
+ * Get all medicines globally
+ * @param {object} filters - Filter options
+ * @returns {Promise<object>} Medicines data
+ */
+export const getAllMedicines = async (filters = {}) => {
+  try {
+    return await apiClient.get('/pharmacies/medicines/all', filters)
+  } catch (error) {
+    console.error('Error fetching all medicines:', error)
+    throw error
+  }
+}
+
+/**
+ * Get active blogs for reading
+ * @param {object} filters - Filter options
+ * @returns {Promise<object>} Blogs data
+ */
+export const getBlogs = async (filters = {}) => {
+  try {
+    return await apiClient.get('/patients/blogs', filters)
+  } catch (error) {
+    console.error('Error fetching blogs:', error)
+    throw error
+  }
+}
+
+/**
+ * Get a single blog by ID
+ * @param {string} blogId - Blog ID
+ * @returns {Promise<object>} Blog data
+ */
+export const getBlogById = async (blogId) => {
+  try {
+    return await apiClient.get(`/patients/blogs/${blogId}`)
+  } catch (error) {
+    console.error('Error fetching blog:', error)
+    throw error
+  }
+}
+

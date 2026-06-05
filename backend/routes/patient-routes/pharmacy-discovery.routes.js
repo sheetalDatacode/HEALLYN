@@ -66,6 +66,23 @@ router.get('/', asyncHandler(async (req, res) => {
   });
 }));
 
+// GET /api/pharmacies/medicines/all
+router.get('/medicines/all', asyncHandler(async (req, res) => {
+  const Medicine = require('../../models/Medicine');
+  const { limit } = req.query;
+  const numLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+
+  const medicines = await Medicine.find({ isActive: true, prescriptionRequired: false })
+    .populate('pharmacyId', 'pharmacyName')
+    .sort({ createdAt: -1 })
+    .limit(numLimit);
+
+  return res.status(200).json({
+    success: true,
+    data: medicines,
+  });
+}));
+
 // GET /api/pharmacies/:id
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;

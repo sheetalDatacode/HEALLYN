@@ -909,6 +909,66 @@ export const getLaboratoryTestsByLaboratory = async (laboratoryId, filters = {},
   }
 }
 
+/**
+ * Get all blogs
+ */
+export const getBlogs = async (filters = {}) => {
+  try {
+    return await apiClient.get('/admin/blogs', filters)
+  } catch (error) {
+    console.error('Error fetching blogs:', error)
+    throw error
+  }
+}
+
+/**
+ * Get blog by ID
+ */
+export const getBlogById = async (blogId) => {
+  try {
+    return await apiClient.get(`/admin/blogs/${blogId}`)
+  } catch (error) {
+    console.error('Error fetching blog:', error)
+    throw error
+  }
+}
+
+/**
+ * Create a new blog
+ */
+export const createBlog = async (blogData) => {
+  try {
+    return await apiClient.post('/admin/blogs', blogData)
+  } catch (error) {
+    console.error('Error creating blog:', error)
+    throw error
+  }
+}
+
+/**
+ * Update an existing blog
+ */
+export const updateBlog = async (blogId, blogData) => {
+  try {
+    return await apiClient.put(`/admin/blogs/${blogId}`, blogData)
+  } catch (error) {
+    console.error('Error updating blog:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete a blog
+ */
+export const deleteBlog = async (blogId) => {
+  try {
+    return await apiClient.delete(`/admin/blogs/${blogId}`)
+  } catch (error) {
+    console.error('Error deleting blog:', error)
+    throw error
+  }
+}
+
 export default {
   loginAdmin,
   storeAdminTokens,
@@ -974,5 +1034,10 @@ export default {
   getLaboratoryInventory,
   getPharmacyMedicinesByPharmacy,
   getLaboratoryTestsByLaboratory,
+  getBlogs,
+  getBlogById,
+  createBlog,
+  updateBlog,
+  deleteBlog,
 }
 
