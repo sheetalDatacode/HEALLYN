@@ -33,6 +33,8 @@ const initializeSocket = (server) => {
   const productionOrigins = [
     'https://healiinnx.vercel.app',
     'https://www.healiinnx.vercel.app',
+    'https://heallyn.vercel.app',
+    'https://www.heallyn.vercel.app',
   ];
 
   // Combine and deduplicate origins

@@ -28,6 +28,8 @@ app.use(
         process.env.FRONTEND_URL || "http://localhost:3000",
         "https://healiinnx.vercel.app",
         "https://www.healiinnx.vercel.app",
+        "https://heallyn.vercel.app",
+        "https://www.heallyn.vercel.app",
       ];
 
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -68,6 +70,8 @@ app.use(
       process.env.FRONTEND_URL || "http://localhost:3000",
       "https://healiinnx.vercel.app",
       "https://www.healiinnx.vercel.app",
+      "https://heallyn.vercel.app",
+      "https://www.heallyn.vercel.app",
     ];
 
     if (allowedOrigins.includes(origin) || !origin) {
