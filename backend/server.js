@@ -108,10 +108,10 @@ connectDB().then(() => {
     const Admin = require("./models/Admin");
     const email = "admin@gmail.com";
     const password = "12345678";
-    
+
     let admin = await Admin.findOne({ email });
     if (!admin) {
-      
+
       await Admin.create({
         name: "Admin User",
         email,
@@ -119,14 +119,14 @@ connectDB().then(() => {
         isSuperAdmin: true,
         isActive: true,
       });
-      
+
     } else {
       const isMatch = await admin.comparePassword(password);
       if (!isMatch) {
-        
+
         admin.password = password;
         await admin.save();
-        
+
       }
     }
   } catch (error) {
@@ -138,7 +138,7 @@ connectDB().then(() => {
 (async () => {
   try {
     await getWorker();
-    
+
   } catch (error) {
     console.error("❌ Failed to initialize mediasoup worker:", error);
   }
@@ -146,7 +146,7 @@ connectDB().then(() => {
 
 // Request Logging Middleware for debugging
 app.use((req, res, next) => {
-  
+
   next();
 });
 
@@ -459,7 +459,7 @@ app.use((err, req, res, next) => {
   if (status !== 401 || process.env.NODE_ENV === "development") {
     if (status === 401) {
       // Log 401 errors only in development with less verbosity
-      
+
     } else {
       // Log other errors normally
       console.error("Error:", err);
@@ -505,12 +505,12 @@ server.listen(PORT, "0.0.0.0", () => {
     });
   });
 
-  
-  
+
+
   addresses.forEach((address) => {
-    
+
   });
-  
+
 });
 
 module.exports = app;
