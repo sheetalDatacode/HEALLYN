@@ -19,6 +19,8 @@ import {
 const sidebarNavItems = [
   { id: 'overview', label: 'Overview', to: '/admin/dashboard', Icon: IoBarChartOutline },
   { id: 'verification', label: 'Verification', to: '/admin/verification', Icon: IoShieldCheckmarkOutline },
+  { id: 'categories', label: 'Categories', to: '/admin/categories', Icon: IoCubeOutline },
+  { id: 'subcategories', label: 'Symptoms', to: '/admin/subcategories', Icon: IoDocumentTextOutline },
   { id: 'doctors', label: 'Doctors', to: '/admin/doctors', Icon: IoMedicalOutline },
   { id: 'patients', label: 'Patients', to: '/admin/users', Icon: IoPeopleOutline },
   { id: 'laboratories', label: 'Laboratories', to: '/admin/laboratories', Icon: IoFlaskOutline },

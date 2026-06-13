@@ -8,6 +8,9 @@ const connectDB = async () => {
   const maskedUri = mongoUri.replace(/:([^:@]+)@/, ':****@');
   
 
+  // Disable buffering globally so queries fail fast instead of hanging when disconnected
+  mongoose.set('bufferCommands', false);
+
   // Connection options for better reliability
   const options = {
     serverSelectionTimeoutMS: 30000, // 30 seconds

@@ -97,13 +97,11 @@ app.use(
 );
 
 // Connect to database
-connectDB().then(() => {
+connectDB().then(async () => {
   const { initCommissionRates } = require("./utils/commissionConfig");
   initCommissionRates();
-});
 
-// Auto-create/update admin for debugging
-(async () => {
+  // Auto-create/update admin for debugging
   try {
     const Admin = require("./models/Admin");
     const email = "admin@gmail.com";
@@ -111,7 +109,6 @@ connectDB().then(() => {
 
     let admin = await Admin.findOne({ email });
     if (!admin) {
-
       await Admin.create({
         name: "Admin User",
         email,
@@ -119,20 +116,17 @@ connectDB().then(() => {
         isSuperAdmin: true,
         isActive: true,
       });
-
     } else {
       const isMatch = await admin.comparePassword(password);
       if (!isMatch) {
-
         admin.password = password;
         await admin.save();
-
       }
     }
   } catch (error) {
     console.error("❌ Failed to create/update default admin:", error.message);
   }
-})();
+});
 
 // Initialize mediasoup worker
 (async () => {
@@ -409,6 +403,8 @@ app.use(
   "/api/admin/blogs",
   require("./routes/admin-routes/blog.routes")
 );
+app.use("/api/admin/categories", require("./routes/admin-routes/category.routes"));
+app.use("/api/admin/subcategories", require("./routes/admin-routes/subcategory.routes"));
 
 // Public Routes (Discovery)
 app.use(
@@ -420,8 +416,12 @@ app.use(
   require("./routes/patient-routes/laboratory-discovery.routes")
 );
 app.use(
-  "/api/specialties",
-  require("./routes/patient-routes/specialty.routes")
+  "/api/categories",
+  require("./routes/patient-routes/category.routes")
+);
+app.use(
+  "/api/subcategories",
+  require("./routes/patient-routes/subcategory.routes")
 );
 
 app.get("/", (req, res) => {

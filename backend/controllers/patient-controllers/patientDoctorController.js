@@ -23,7 +23,7 @@ const buildSearchFilter = (search, fields = []) => {
 
 // GET /api/patients/doctors
 exports.getDoctors = asyncHandler(async (req, res) => {
-  const { search, specialty, city, state, rating } = req.query;
+  const { search, specialty, category, subcategory, city, state, rating } = req.query;
   const { page, limit, skip } = buildPagination(req);
 
   
@@ -33,6 +33,15 @@ exports.getDoctors = asyncHandler(async (req, res) => {
   if (specialty && specialty !== 'undefined' && specialty.trim()) {
     filter.specialization = new RegExp(specialty.trim(), 'i');
   }
+  
+  if (category && category !== 'undefined' && category !== 'all') {
+    filter.category = category;
+  }
+  
+  if (subcategory && subcategory !== 'undefined') {
+    filter.subcategories = subcategory; // This matches if subcategory ID is in the array
+  }
+  
   if (city) filter['clinicDetails.address.city'] = new RegExp(city.trim(), 'i');
   if (state) filter['clinicDetails.address.state'] = new RegExp(state.trim(), 'i');
   if (rating) filter.rating = { $gte: parseFloat(rating) };
@@ -55,7 +64,9 @@ exports.getDoctors = asyncHandler(async (req, res) => {
 
   const [doctors, total] = await Promise.all([
     Doctor.find(finalFilter)
-      .select('firstName lastName specialization profileImage consultationFee rating clinicDetails bio experienceYears reviewCount')
+      .select('firstName lastName specialization category subcategories profileImage consultationFee rating clinicDetails bio experienceYears reviewCount')
+      .populate('category', 'name image')
+      .populate('subcategories', 'name image')
       .sort({ rating: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit),

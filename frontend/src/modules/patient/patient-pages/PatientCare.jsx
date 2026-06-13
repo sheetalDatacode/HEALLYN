@@ -6,101 +6,8 @@ import {
   IoCallOutline,
   IoChevronForwardOutline,
 } from 'react-icons/io5'
-import { getPatientProfile } from '../patient-services/patientService'
+import { getPatientProfile, getDoctorCategories, getDoctorSubcategories } from '../patient-services/patientService'
 import PatientSidebar from '../patient-components/PatientSidebar'
-
-// ─────────────────────────────────────────────
-// Data
-// ─────────────────────────────────────────────
-const SPECIALTIES = [
-  {
-    id: 'general-physician',
-    name: 'General Physician',
-    image: 'https://img.freepik.com/free-photo/beautiful-young-female-doctor-looking-camera-office_23-2147896177.jpg',
-    color: '#fff1f2',
-  },
-  {
-    id: 'gynaecology',
-    name: 'Gynaecology',
-    image: 'https://img.freepik.com/free-photo/doctor-with-stethoscope-hands-hospital-background_1423-1.jpg',
-    color: '#fdf4ff',
-  },
-  {
-    id: 'dermatology',
-    name: 'Dermatology',
-    image: 'https://img.freepik.com/free-photo/young-beautiful-female-doctor-white-coat_171337-5356.jpg',
-    color: '#fff7ed',
-  },
-  {
-    id: 'diabetology',
-    name: 'Diabetology',
-    image: 'https://img.freepik.com/free-photo/doctor-checking-blood-sugar-level_23-2148892966.jpg',
-    color: '#f0fdf4',
-  },
-  {
-    id: 'gastroenterology',
-    name: 'Gastroenterology',
-    image: 'https://img.freepik.com/free-photo/medical-workers-covid-19-vaccination-concept_23-2149101830.jpg',
-    color: '#eff6ff',
-  },
-  {
-    id: 'cardiology',
-    name: 'Cardiology',
-    image: 'https://img.freepik.com/free-photo/doctor-checking-heart-rate_23-2148892971.jpg',
-    color: '#fef2f2',
-  },
-  {
-    id: 'orthopaedics',
-    name: 'Orthopaedics',
-    image: 'https://img.freepik.com/free-photo/male-doctor-hospital_23-2148827756.jpg',
-    color: '#f0f9ff',
-  },
-  {
-    id: 'neurology',
-    name: 'Neurology',
-    image: 'https://img.freepik.com/free-photo/medium-shot-doctor-with-clipboard_23-2148847402.jpg',
-    color: '#faf5ff',
-  },
-  {
-    id: 'paediatrics',
-    name: 'Paediatrics',
-    image: 'https://img.freepik.com/free-photo/doctor-with-little-patient_23-2148541750.jpg',
-    color: '#f0fdfa',
-  },
-  {
-    id: 'ent',
-    name: 'ENT',
-    image: 'https://img.freepik.com/free-photo/portrait-doctor-white-coat_171337-5555.jpg',
-    color: '#fffbeb',
-  },
-  {
-    id: 'psychiatry',
-    name: 'Psychiatry',
-    image: 'https://img.freepik.com/free-photo/doctor-taking-notes_23-2148827772.jpg',
-    color: '#fdf4ff',
-  },
-  {
-    id: 'urology',
-    name: 'Urology',
-    image: 'https://img.freepik.com/free-photo/medium-shot-smiley-doctor-with-stethoscope_23-2149519543.jpg',
-    color: '#ecfdf5',
-  },
-]
-
-const SYMPTOMS = [
-  { id: 'fever', name: 'Fever', emoji: '🌡️', color: '#fff1f2', iconBg: '#fecdd3' },
-  { id: 'chest-pain', name: 'Chest Pain', emoji: '💗', color: '#fdf4ff', iconBg: '#f5d0fe' },
-  { id: 'cough', name: 'Cough & Cold', emoji: '🤧', color: '#eff6ff', iconBg: '#bfdbfe' },
-  { id: 'constipation', name: 'Constipation', emoji: '😣', color: '#fff7ed', iconBg: '#fed7aa' },
-  { id: 'sore-throat', name: 'Sore Throat', emoji: '😮', color: '#f0fdf4', iconBg: '#bbf7d0' },
-  { id: 'infertility', name: 'Infertility', emoji: '🌸', color: '#fdf4ff', iconBg: '#f5d0fe' },
-  { id: 'irregular-periods', name: 'Irregular Periods', emoji: '📅', color: '#fef2f2', iconBg: '#fecaca' },
-  { id: 'headache', name: 'Headache', emoji: '🤕', color: '#fffbeb', iconBg: '#fde68a' },
-  { id: 'back-pain', name: 'Back Pain', emoji: '🦴', color: '#f0f9ff', iconBg: '#bae6fd' },
-  { id: 'diabetes', name: 'Diabetes', emoji: '🩸', color: '#ecfdf5', iconBg: '#a7f3d0' },
-  { id: 'anxiety', name: 'Anxiety', emoji: '🧠', color: '#faf5ff', iconBg: '#e9d5ff' },
-  { id: 'skin-rash', name: 'Skin Rash', emoji: '🔴', color: '#fff7ed', iconBg: '#fed7aa' },
-]
 
 // ─────────────────────────────────────────────
 // Sub-components
@@ -133,10 +40,14 @@ const SymptomCard = ({ symptom, onClick }) => (
     className="group flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-4 bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-[#11496c]/20 transition-all duration-300 active:scale-95 w-full"
   >
     <div
-      className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition-transform duration-300"
-      style={{ backgroundColor: symptom.iconBg }}
+      className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform duration-300"
+      style={{ backgroundColor: symptom.iconBg || '#f1f5f9' }}
     >
-      {symptom.emoji}
+      {symptom.image ? (
+        <img src={symptom.image} alt={symptom.name} className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-xl md:text-2xl">{symptom.emoji || '🩺'}</span>
+      )}
     </div>
     <span className="text-[9px] md:text-[11px] font-bold text-slate-600 text-center leading-tight line-clamp-2">
       {symptom.name}
@@ -156,6 +67,20 @@ const SectionHeader = ({ title, onViewAll }) => (
   </div>
 )
 
+const SpecialtyShimmer = () => (
+  <div className="flex flex-col items-center gap-2 md:gap-3 p-3 md:p-4 bg-white rounded-2xl md:rounded-[24px] border border-slate-100 shadow-sm w-full animate-pulse">
+    <div className="w-full aspect-square rounded-xl md:rounded-2xl bg-slate-200" />
+    <div className="w-3/4 h-3 md:h-4 bg-slate-200 rounded mt-1" />
+  </div>
+)
+
+const SymptomShimmer = () => (
+  <div className="flex flex-col items-center gap-1.5 md:gap-2 p-2.5 md:p-4 bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm w-full animate-pulse">
+    <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-slate-200" />
+    <div className="w-full h-2 md:h-3 bg-slate-200 rounded mt-1" />
+  </div>
+)
+
 // ─────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────
@@ -166,6 +91,9 @@ const PatientCare = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [profile, setProfile] = useState(null)
   const [showAllSpecialties, setShowAllSpecialties] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [symptoms, setSymptoms] = useState([])
+  const [loading, setLoading] = useState(true)
   const toggleButtonRef = useRef(null)
 
   const navItems = [
@@ -178,29 +106,47 @@ const PatientCare = () => {
   ]
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
+        setLoading(true)
         const { getAuthToken } = await import('../../../utils/apiClient')
         const token = getAuthToken('patient')
         if (!token) { navigate('/patient/login'); return }
-        const response = await getPatientProfile()
-        if (response.success && response.data) {
-          const patient = response.data.patient || response.data
+        
+        // Fetch profile
+        const profileRes = await getPatientProfile()
+        if (profileRes.success && profileRes.data) {
+          const patient = profileRes.data.patient || profileRes.data
           setProfile(patient)
         }
+
+        // Fetch Categories & Symptoms
+        const [catRes, sympRes] = await Promise.all([
+          getDoctorCategories(),
+          getDoctorSubcategories()
+        ])
+        
+        if (catRes.success) {
+          setCategories(catRes.data)
+        }
+        if (sympRes.success) {
+          setSymptoms(sympRes.data)
+        }
       } catch (err) {
-        console.error('Failed to fetch profile:', err)
+        console.error('Failed to fetch data:', err)
+      } finally {
+        setLoading(false)
       }
     }
-    fetchProfile()
+    fetchData()
   }, [navigate])
 
   const handleSpecialtyClick = (specialty) => {
-    navigate(`/patient/specialties/${specialty.id}/doctors`)
+    navigate(`/patient/specialties/${specialty.id || specialty._id}/doctors`)
   }
 
   const handleSymptomClick = (symptom) => {
-    navigate(`/patient/doctors?symptom=${symptom.id}`)
+    navigate(`/patient/doctors?symptom=${symptom.id || symptom._id}`)
   }
 
   const handleSidebarClose = () => {
@@ -221,10 +167,10 @@ const PatientCare = () => {
   }
 
   // Filter by search
-  const filteredSpecialties = SPECIALTIES.filter(s =>
+  const filteredSpecialties = categories.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
-  const filteredSymptoms = SYMPTOMS.filter(s =>
+  const filteredSymptoms = symptoms.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -257,13 +203,16 @@ const PatientCare = () => {
           />
           <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-6 border border-slate-100 shadow-sm">
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-              {displayedSpecialties.map(specialty => (
-                <SpecialtyCard
-                  key={specialty.id}
-                  specialty={specialty}
-                  onClick={handleSpecialtyClick}
-                />
-              ))}
+              {loading 
+                ? Array(6).fill(0).map((_, i) => <SpecialtyShimmer key={i} />)
+                : displayedSpecialties.map(specialty => (
+                    <SpecialtyCard
+                      key={specialty._id || specialty.id}
+                      specialty={specialty}
+                      onClick={handleSpecialtyClick}
+                    />
+                  ))
+              }
             </div>
             {filteredSpecialties.length > 6 && (
               <button
@@ -327,13 +276,16 @@ const PatientCare = () => {
           />
           <div className="bg-white rounded-[24px] md:rounded-[32px] p-4 md:p-6 border border-slate-100 shadow-sm">
             <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-4">
-              {filteredSymptoms.map(symptom => (
-                <SymptomCard
-                  key={symptom.id}
-                  symptom={symptom}
-                  onClick={handleSymptomClick}
-                />
-              ))}
+              {loading
+                ? Array(12).fill(0).map((_, i) => <SymptomShimmer key={i} />)
+                : filteredSymptoms.map(symptom => (
+                    <SymptomCard
+                      key={symptom._id || symptom.id}
+                      symptom={symptom}
+                      onClick={handleSymptomClick}
+                    />
+                  ))
+              }
             </div>
           </div>
         </section>

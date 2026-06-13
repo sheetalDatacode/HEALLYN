@@ -224,8 +224,17 @@ const apiRequest = async (endpoint, options = {}, module = 'admin') => {
     signal: options.signal, // Support AbortController signal
   }
 
+  // Add timeout to prevent infinite hanging (e.g. when backend Mongoose connection is dropped and buffering)
+  let timeoutId;
+  if (!config.signal) {
+    const controller = new AbortController();
+    config.signal = controller.signal;
+    timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+  }
+
   try {
     let response = await fetch(url, config)
+    if (timeoutId) clearTimeout(timeoutId);
 
     // Handle 429 Too Many Requests with retry logic
     if (response.status === 429) {
@@ -369,11 +378,12 @@ class ApiClient {
    * @returns {Promise<object>} Response data
    */
   async post(endpoint, data = {}) {
+    const isFormData = data instanceof FormData
     const response = await apiRequest(
       endpoint,
       {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
       },
       this.module
     )
@@ -420,11 +430,12 @@ class ApiClient {
    * @returns {Promise<object>} Response data
    */
   async patch(endpoint, data = {}) {
+    const isFormData = data instanceof FormData
     const response = await apiRequest(
       endpoint,
       {
         method: 'PATCH',
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
       },
       this.module
     )

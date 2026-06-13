@@ -11,20 +11,10 @@ import {
 } from 'react-icons/io5'
 import { TbStethoscope } from 'react-icons/tb'
 import { MdOutlineEscalatorWarning } from 'react-icons/md'
-import { getDiscoveryDoctors, getSpecialties, getPatientProfile } from '../patient-services/patientService'
+import { getDiscoveryDoctors, getDoctorCategories, getDoctorSubcategories, getPatientProfile } from '../patient-services/patientService'
 import { useToast } from '../../../contexts/ToastContext'
 import Pagination from '../../../components/Pagination'
 import PatientSidebar from '../patient-components/PatientSidebar'
-
-// Default specialties (will be replaced by API data)
-const defaultSpecialties = [
-  { id: 'all', label: 'All Specialties', icon: TbStethoscope },
-  { id: 'dentist', label: 'Dentist', icon: TbStethoscope },
-  { id: 'cardio', label: 'Cardiology', icon: IoHeartOutline },
-  { id: 'ortho', label: 'Orthopedic', icon: MdOutlineEscalatorWarning },
-  { id: 'neuro', label: 'Neurology', icon: IoPulseOutline },
-  { id: 'general', label: 'General', icon: TbStethoscope },
-]
 
 const renderStars = (rating) => {
   const stars = []
@@ -80,9 +70,7 @@ const PatientDoctors = () => {
   const toast = useToast()
   const [searchParams] = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedSpecialty, setSelectedSpecialty] = useState('all')
   const [doctors, setDoctors] = useState([])
-  const [specialtiesList, setSpecialtiesList] = useState(defaultSpecialties)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -90,7 +78,12 @@ const PatientDoctors = () => {
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [profile, setProfile] = useState(null)
-  const sortBy = 'relevance'
+  
+  // Category & Symptom States
+  const [categoriesList, setCategoriesList] = useState([{ _id: 'all', name: 'All Categories' }])
+  const [subcategoriesList, setSubcategoriesList] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedSubcategory, setSelectedSubcategory] = useState('')
 
   // Fetch profile
   useEffect(() => {
@@ -108,75 +101,30 @@ const PatientDoctors = () => {
     fetchProfile()
   }, [])
 
-  // Fetch specialties
+  // Fetch categories & subcategories
   useEffect(() => {
-    const fetchAllDoctorsForSpecialties = async () => {
+    const fetchCategoriesData = async () => {
       try {
-        const allDoctorsResponse = await getDiscoveryDoctors({ limit: 1000, page: 1 })
-        if (allDoctorsResponse && allDoctorsResponse.success && allDoctorsResponse.data) {
-          const allDoctorsData = Array.isArray(allDoctorsResponse.data) 
-            ? allDoctorsResponse.data 
-            : (allDoctorsResponse.data.items || [])
-          
-          const doctorSpecialties = new Set()
-          allDoctorsData.forEach(doctor => {
-            const specialty = doctor.specialization || doctor.specialty
-            if (specialty && specialty.trim()) {
-              doctorSpecialties.add(specialty.trim())
-            }
-          })
-          
-          const specialtiesResponse = await getSpecialties().catch(() => ({ success: false, data: [] }))
-          
-          const apiSpecialties = new Map()
-          if (specialtiesResponse.success && specialtiesResponse.data) {
-            const specialtiesData = Array.isArray(specialtiesResponse.data) 
-              ? specialtiesResponse.data 
-              : specialtiesResponse.data.specialties || []
-            
-            specialtiesData.forEach(s => {
-              const sName = typeof s === 'string' ? s : (s.name || s.label || '')
-              if (sName && sName.trim()) {
-                const normalized = sName.trim()
-                apiSpecialties.set(normalized.toLowerCase(), {
-                  id: normalized.toLowerCase().replace(/\s+/g, '_'),
-                  label: normalized,
-                  name: normalized,
-                })
-              }
-            })
-          }
-          
-          const allSpecialties = new Map(apiSpecialties)
-          doctorSpecialties.forEach(specialty => {
-            const normalized = specialty.toLowerCase()
-            if (!allSpecialties.has(normalized)) {
-              allSpecialties.set(normalized, {
-                id: specialty.toLowerCase().replace(/\s+/g, '_'),
-                label: specialty,
-                name: specialty,
-              })
-            }
-          })
-          
-          const processedSpecialties = Array.from(allSpecialties.values())
-            .sort((a, b) => a.label.localeCompare(b.label))
-          
-          setSpecialtiesList([
-            { id: 'all', label: 'All Specialties', icon: TbStethoscope, name: 'all' },
-            ...processedSpecialties.map(s => ({
-              id: s.id,
-              label: s.label,
-              name: s.name,
-              icon: TbStethoscope,
-            })),
-          ])
+        const [catRes, subcatRes] = await Promise.all([
+          getDoctorCategories().catch(() => ({ success: false, data: [] })),
+          getDoctorSubcategories().catch(() => ({ success: false, data: [] }))
+        ]);
+
+        if (catRes.success && catRes.data) {
+          setCategoriesList([
+            { _id: 'all', name: 'All Categories' },
+            ...catRes.data
+          ]);
+        }
+        if (subcatRes.success && subcatRes.data) {
+          // Only show approved subcategories to patients
+          setSubcategoriesList(subcatRes.data.filter(sub => sub.isApproved));
         }
       } catch (err) {
-        console.error('Error fetching specialties:', err)
+        console.error('Error fetching categories:', err);
       }
-    }
-    fetchAllDoctorsForSpecialties()
+    };
+    fetchCategoriesData();
   }, [])
   
   // Fetch doctors
@@ -191,11 +139,11 @@ const PatientDoctors = () => {
           page: 1,
           _t: Date.now(),
         }
-        if (selectedSpecialty && selectedSpecialty !== 'all') {
-          const specialtyObj = specialtiesList.find(s => s.id === selectedSpecialty)
-          if (specialtyObj && specialtyObj.name && specialtyObj.name !== 'all') {
-            filters.specialty = specialtyObj.name
-          }
+        if (selectedCategory && selectedCategory !== 'all') {
+          filters.category = selectedCategory;
+        }
+        if (selectedSubcategory) {
+          filters.subcategory = selectedSubcategory;
         }
         if (searchTerm && searchTerm.trim()) {
           filters.search = searchTerm.trim()
@@ -226,7 +174,7 @@ const PatientDoctors = () => {
               name: doctor.firstName && doctor.lastName
                 ? `Dr. ${doctor.firstName} ${doctor.lastName}`
                 : doctor.name || 'Dr. Unknown',
-              specialty: doctor.specialization || doctor.specialty || 'General',
+              category: doctor.category ? doctor.category.name : (doctor.specialization || 'General'),
               experience: doctor.experienceYears ? `${doctor.experienceYears} years` : 'N/A',
               rating: doctor.rating || 0,
               reviewCount: doctor.reviewCount || 0,
@@ -247,11 +195,13 @@ const PatientDoctors = () => {
       }
     }
     fetchData()
-  }, [selectedSpecialty, searchTerm, toast, specialtiesList])
+  }, [selectedCategory, selectedSubcategory, searchTerm, toast])
 
   useEffect(() => {
-    const specialtyFromUrl = searchParams.get('specialty')
-    if (specialtyFromUrl) setSelectedSpecialty(specialtyFromUrl)
+    const catFromUrl = searchParams.get('category')
+    const subcatFromUrl = searchParams.get('subcategory')
+    if (catFromUrl) setSelectedCategory(catFromUrl)
+    if (subcatFromUrl) setSelectedSubcategory(subcatFromUrl)
   }, [searchParams])
 
   const filteredDoctors = useMemo(() => {
@@ -267,7 +217,7 @@ const PatientDoctors = () => {
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage)
   const totalItems = filteredDoctors.length
 
-  useEffect(() => setCurrentPage(1), [searchTerm, selectedSpecialty])
+  useEffect(() => setCurrentPage(1), [searchTerm, selectedCategory, selectedSubcategory])
 
   const handleLogout = async () => {
     setIsSidebarOpen(false)
@@ -275,6 +225,13 @@ const PatientDoctors = () => {
     await logoutPatient()
     navigate('/patient/login')
   }
+
+  // Get symptoms relevant to selected category
+  const availableSymptoms = useMemo(() => {
+    if (!subcategoriesList.length) return [];
+    if (selectedCategory === 'all') return subcategoriesList;
+    return subcategoriesList.filter(sub => sub.category === selectedCategory);
+  }, [subcategoriesList, selectedCategory]);
 
   return (
     <section className="bg-[#f8fafc] min-h-screen pb-32 overflow-x-hidden">
@@ -306,7 +263,7 @@ const PatientDoctors = () => {
               <div className="w-full max-w-md relative group">
                  <input
                    type="text"
-                   placeholder="Search name, specialty, or location..."
+                   placeholder="Search name or clinic..."
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}
                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] py-5 pl-14 pr-6 text-white placeholder:text-white/40 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 transition-all text-sm md:text-base"
@@ -318,28 +275,45 @@ const PatientDoctors = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 mt-10 space-y-10">
-        {/* Specialty Filters - Premium Chips */}
+        {/* Category Filters - Premium Chips */}
         <div className="space-y-4">
-           <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-800">Browse by Specialty</h2>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{specialtiesList.length} Categories</span>
+           <div className="flex items-center justify-between flex-wrap gap-4">
+              <h2 className="text-xl font-black text-slate-800">Browse by Category</h2>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{categoriesList.length - 1} Categories</span>
+                
+                {/* Symptoms Dropdown */}
+                <select
+                  value={selectedSubcategory}
+                  onChange={(e) => setSelectedSubcategory(e.target.value)}
+                  className="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-[#11496c] focus:border-[#11496c] block p-2.5 outline-none"
+                >
+                  <option value="">All Symptoms</option>
+                  {availableSymptoms.map(sub => (
+                    <option key={sub._id} value={sub._id}>{sub.name}</option>
+                  ))}
+                </select>
+              </div>
            </div>
+           
            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1">
-              {specialtiesList.map((specialty) => {
-                const Icon = specialty.icon || TbStethoscope
-                const isSelected = selectedSpecialty === specialty.id
+              {categoriesList.map((category) => {
+                const isSelected = selectedCategory === category._id
                 return (
                   <button
-                    key={specialty.id}
-                    onClick={() => setSelectedSpecialty(specialty.id)}
+                    key={category._id}
+                    onClick={() => {
+                      setSelectedCategory(category._id)
+                      setSelectedSubcategory('') // Reset symptom when category changes
+                    }}
                     className={`inline-flex shrink-0 items-center gap-3 rounded-[20px] px-6 py-4 text-sm font-black transition-all border ${
                       isSelected
                         ? 'bg-[#11496c] text-white border-[#11496c] shadow-lg shadow-[#11496c]/20 scale-105'
                         : 'bg-white text-slate-600 border-slate-100 hover:border-[#11496c]/30 hover:bg-slate-50'
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isSelected ? 'text-emerald-400' : 'text-[#11496c]'}`} />
-                    <span>{specialty.label}</span>
+                    <TbStethoscope className={`h-5 w-5 ${isSelected ? 'text-emerald-400' : 'text-[#11496c]'}`} />
+                    <span>{category.name}</span>
                   </button>
                 )
               })}
@@ -395,7 +369,7 @@ const PatientDoctors = () => {
                <h3 className="text-2xl font-black text-slate-900">No Specialists Found</h3>
                <p className="text-slate-500 font-medium max-w-md mx-auto">We couldn't find any doctors matching your current search or specialty. Try clearing filters.</p>
             </div>
-            <button onClick={() => { setSearchTerm(''); setSelectedSpecialty('all'); }} className="text-[#11496c] font-black underline underline-offset-8">Clear all filters</button>
+            <button onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setSelectedSubcategory(''); }} className="text-[#11496c] font-black underline underline-offset-8">Clear all filters</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -437,7 +411,7 @@ const PatientDoctors = () => {
                        <div className="flex flex-col">
                           <h3 className="text-lg font-black text-slate-900 truncate group-hover:text-[#11496c] transition-colors leading-tight">{doctor.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
-                             <span className="text-[10px] font-bold text-[#11496c] uppercase tracking-widest">{doctor.specialty}</span>
+                             <span className="text-[10px] font-bold text-[#11496c] uppercase tracking-widest">{doctor.category}</span>
                              <span className="h-1 w-1 rounded-full bg-slate-300"></span>
                              <span className="text-[10px] font-bold text-slate-400">{doctor.experience} Exp.</span>
                           </div>
@@ -513,4 +487,3 @@ const PatientDoctors = () => {
 }
 
 export default PatientDoctors
-

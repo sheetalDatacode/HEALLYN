@@ -421,6 +421,32 @@ export const getSpecialties = async () => {
 }
 
 /**
+ * Get doctor categories
+ * @returns {Promise<object>} Categories data
+ */
+export const getDoctorCategories = async () => {
+  try {
+    return await apiClient.get('/categories')
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    throw error
+  }
+}
+
+/**
+ * Get doctor subcategories (symptoms)
+ * @returns {Promise<object>} Subcategories data
+ */
+export const getDoctorSubcategories = async () => {
+  try {
+    return await apiClient.get('/subcategories')
+  } catch (error) {
+    console.error('Error fetching subcategories:', error)
+    throw error
+  }
+}
+
+/**
  * Get locations (cities and states)
  * @returns {Promise<object>} Locations data with cities and states
  */

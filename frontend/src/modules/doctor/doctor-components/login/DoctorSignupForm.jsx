@@ -19,23 +19,64 @@ const DoctorSignupForm = ({
   doctorSignupData,
   setDoctorSignupData,
   handleDoctorSignupChange,
-  showSpecializationDropdown,
-  setShowSpecializationDropdown,
-  specializationDropdownRef,
-  specializationSearchTerm,
-  setSpecializationSearchTerm,
-  availableSpecializations,
-  filteredSpecializations,
-  specializationInputRef,
-  addEducationEntry,
-  removeEducationEntry,
-  removeLanguage,
-  handleDocumentUpload,
+  categories = [],
+  subcategories = [],
   isSubmitting,
   handlePreviousStep,
   handleNextStep,
   handleModeChange,
 }) => {
+  const [subcategorySearch, setSubcategorySearch] = useState('');
+  const [showSubcategoryDropdown, setShowSubcategoryDropdown] = useState(false);
+
+  // Filter subcategories based on selected category and search term
+  const filteredSubcategories = subcategories.filter(sub => {
+    // Show subcategories that belong to the selected category
+    if (doctorSignupData.category && sub.category !== doctorSignupData.category) {
+      return false;
+    }
+    // Filter by search term
+    if (subcategorySearch && !sub.name.toLowerCase().includes(subcategorySearch.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  const handleSubcategorySelect = (sub) => {
+    const currentSubs = doctorSignupData.subcategories || [];
+    // If not already selected
+    if (!currentSubs.includes(sub._id)) {
+      handleDoctorSignupChange({
+        target: { name: 'subcategories', value: [...currentSubs, sub._id] }
+      });
+    }
+    setSubcategorySearch('');
+    setShowSubcategoryDropdown(false);
+  };
+
+  const handleCustomSubcategoryAdd = () => {
+    if (subcategorySearch.trim()) {
+      const currentSubs = doctorSignupData.subcategories || [];
+      handleDoctorSignupChange({
+        target: { name: 'subcategories', value: [...currentSubs, subcategorySearch.trim()] }
+      });
+      setSubcategorySearch('');
+      setShowSubcategoryDropdown(false);
+    }
+  };
+
+  const removeSubcategory = (subValue) => {
+    const currentSubs = doctorSignupData.subcategories || [];
+    handleDoctorSignupChange({
+      target: { name: 'subcategories', value: currentSubs.filter(s => s !== subValue) }
+    });
+  };
+
+  // Helper to get subcategory name for display
+  const getSubcategoryName = (subValue) => {
+    const found = subcategories.find(s => s._id === subValue);
+    return found ? found.name : subValue; // If not found, it's a dynamically added string
+  };
   return (
               <motion.div
                 key="signup-doctor"
@@ -189,7 +230,6 @@ const DoctorSignupForm = ({
                           </div>
                         </div>
                       </section>
-
                     </motion.div>
                   )}
 
@@ -205,123 +245,142 @@ const DoctorSignupForm = ({
                         <h3 className="text-xl font-bold text-slate-900 mb-1">Professional Information</h3>
                         <p className="text-xs text-slate-500">Tell us about your professional background</p>
                       </div>
-                      {/* Professional Information */}
                       <section className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                         <div className="flex flex-col gap-1.5 sm:col-span-2">
-                          <label htmlFor="specialization" className="text-sm font-semibold text-slate-700">
-                            Specialization <span className="text-red-500">*</span>
+                          <label htmlFor="category" className="text-sm font-semibold text-slate-700">
+                            Category <span className="text-red-500">*</span>
                           </label>
                           <div className="relative">
                             <span className="absolute inset-y-0 left-3 flex items-center text-[#11496c] z-10">
                               <IoMedicalOutline className="h-5 w-5" aria-hidden="true" />
                             </span>
-                            <input
-                              ref={specializationInputRef}
-                              id="specialization"
-                              name="specialization"
-                              type="text"
-                              value={doctorSignupData.specialization}
+                            <select
+                              id="category"
+                              name="category"
+                              value={doctorSignupData.category}
                               onChange={handleDoctorSignupChange}
-                              onFocus={() => {
-                                if (availableSpecializations.length > 0 || doctorSignupData.specialization.trim()) {
-                                  setShowSpecializationDropdown(true)
-                                }
+                              required
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 pl-11 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#11496c] focus:outline-none focus:ring-2 focus:ring-[#11496c]/20"
+                              style={{ '--tw-ring-color': 'rgba(17, 73, 108, 0.2)' }}
+                            >
+                              <option value="">Select a category</option>
+                              {categories.map((cat) => (
+                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 sm:col-span-2">
+                          <label htmlFor="subcategories" className="text-sm font-semibold text-slate-700">
+                            Symptoms / Subcategories <span className="text-red-500">*</span>
+                          </label>
+                          
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {(doctorSignupData.subcategories || []).map((subVal, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center gap-1 rounded-full bg-[#11496c] px-3 py-1 text-xs font-semibold text-white"
+                              >
+                                {getSubcategoryName(subVal)}
+                                <button
+                                  type="button"
+                                  onClick={() => removeSubcategory(subVal)}
+                                  className="hover:text-slate-200"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="relative">
+                            <span className="absolute inset-y-0 left-3 flex items-center text-[#11496c] z-10">
+                              <IoMedicalOutline className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <input
+                              type="text"
+                              value={subcategorySearch}
+                              onChange={(e) => {
+                                setSubcategorySearch(e.target.value);
+                                setShowSubcategoryDropdown(true);
                               }}
+                              onFocus={() => setShowSubcategoryDropdown(true)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter' && showSpecializationDropdown) {
-                                  e.preventDefault()
-                                  if (filteredSpecializations.length > 0) {
-                                    // Select first filtered result
-                                    setDoctorSignupData(prev => ({ ...prev, specialization: filteredSpecializations[0] }))
-                                    setSpecializationSearchTerm('')
-                                    setShowSpecializationDropdown(false)
-                                  } else if (specializationSearchTerm.trim()) {
-                                    // Use typed value
-                                    setDoctorSignupData(prev => ({ ...prev, specialization: specializationSearchTerm.trim() }))
-                                    setSpecializationSearchTerm('')
-                                    setShowSpecializationDropdown(false)
+                                if (e.key === 'Enter' && showSubcategoryDropdown) {
+                                  e.preventDefault();
+                                  if (filteredSubcategories.length > 0) {
+                                    handleSubcategorySelect(filteredSubcategories[0]);
+                                  } else if (subcategorySearch.trim()) {
+                                    handleCustomSubcategoryAdd();
                                   }
                                 } else if (e.key === 'Escape') {
-                                  setShowSpecializationDropdown(false)
+                                  setShowSubcategoryDropdown(false);
                                 }
                               }}
-                              required
-                              placeholder="Type or select specialization (e.g., Cardiology, General Medicine)"
-                              maxLength={100}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 pl-11 pr-10 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#11496c] focus:outline-none focus:ring-2 focus:ring-[#11496c]/20"
+                              placeholder={doctorSignupData.category ? "Type to search symptoms..." : "Please select a category first"}
+                              disabled={!doctorSignupData.category}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 pl-11 pr-10 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[#11496c] focus:outline-none focus:ring-2 focus:ring-[#11496c]/20 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                               style={{ '--tw-ring-color': 'rgba(17, 73, 108, 0.2)' }}
                             />
-                            {doctorSignupData.specialization && (
+                            {subcategorySearch && (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setDoctorSignupData(prev => ({ ...prev, specialization: '' }))
-                                  setSpecializationSearchTerm('')
-                                  setShowSpecializationDropdown(false)
-                                  setTimeout(() => {
-                                    if (specializationInputRef.current) {
-                                      specializationInputRef.current.focus()
-                                    }
-                                  }, 0)
+                                  setSubcategorySearch('')
+                                  setShowSubcategoryDropdown(false)
                                 }}
                                 className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600 z-10"
                               >
                                 <IoCloseOutline className="h-4 w-4" />
                               </button>
                             )}
-                            {/* Dropdown */}
-                            {showSpecializationDropdown && (
+
+                            {showSubcategoryDropdown && doctorSignupData.category && (
                               <div
-                                ref={specializationDropdownRef}
                                 className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg"
                               >
-                                {filteredSpecializations.length > 0 ? (
+                                {filteredSubcategories.length > 0 ? (
                                   <div className="py-1">
-                                    {filteredSpecializations.map((spec, index) => (
+                                    {filteredSubcategories.map((sub) => (
                                       <button
-                                        key={index}
+                                        key={sub._id}
                                         type="button"
-                                        onClick={() => {
-                                          setDoctorSignupData(prev => ({ ...prev, specialization: spec }))
-                                          setSpecializationSearchTerm(spec)
-                                          setShowSpecializationDropdown(false)
-                                        }}
+                                        onClick={() => handleSubcategorySelect(sub)}
                                         className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-[#11496c] hover:text-white transition-colors flex items-center gap-2"
                                       >
                                         <IoMedicalOutline className="h-4 w-4 flex-shrink-0" />
-                                        <span>{spec}</span>
+                                        <span>{sub.name}</span>
                                       </button>
                                     ))}
                                   </div>
                                 ) : (
                                   <div className="px-4 py-3 text-sm text-slate-500">
-                                    No matching specializations found. You can type your own.
+                                    No matching symptoms found.
                                   </div>
                                 )}
-                                {/* Option to use typed value - show when user has typed something that doesn't match any option */}
-                                {doctorSignupData.specialization.trim() &&
-                                  !filteredSpecializations.some(s => s.toLowerCase() === doctorSignupData.specialization.trim().toLowerCase()) && (
+                                
+                                {subcategorySearch.trim() &&
+                                  !filteredSubcategories.some(s => s.name.toLowerCase() === subcategorySearch.trim().toLowerCase()) && (
                                     <div className="border-t border-slate-200">
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          // Value is already set in the input, just close dropdown
-                                          setShowSpecializationDropdown(false)
-                                        }}
+                                        onClick={handleCustomSubcategoryAdd}
                                         className="w-full px-4 py-2.5 text-left text-sm text-[#11496c] hover:bg-[#11496c] hover:text-white transition-colors flex items-center gap-2 font-medium"
                                       >
                                         <IoAddOutline className="h-4 w-4 flex-shrink-0" />
-                                        <span>Use "{doctorSignupData.specialization.trim()}" (Press Enter or click)</span>
+                                        <span>Add "{subcategorySearch.trim()}" (Press Enter)</span>
                                       </button>
                                     </div>
-                                  )}
+                                )}
                               </div>
                             )}
                           </div>
                           <p className="text-xs text-slate-500">
-                            Select from list or type your own specialization
+                            Select multiple symptoms from list or type to add "Other"
                           </p>
                         </div>
+                        
                         <div className="flex flex-col gap-1.5">
                           <label htmlFor="gender" className="text-sm font-semibold text-slate-700">
                             Gender <span className="text-red-500">*</span>

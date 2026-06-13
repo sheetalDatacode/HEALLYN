@@ -84,7 +84,7 @@ const ServicesSlider = ({ navigate }) => {
       onClick: () => navigate('/patient/reports')
     },
     {
-      title: "Your Physician",
+      title: "Your Physiotherapist",
       subtitle: "Consult with general physicians for everyday health issues",
       image: img5,
       gradient: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",

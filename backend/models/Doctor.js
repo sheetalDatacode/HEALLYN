@@ -10,7 +10,8 @@ const doctorSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     phone: { type: String, required: true, unique: true, trim: true },
     password: { type: String, minlength: 8 },
-    specialization: { type: String, required: true, trim: true },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'DoctorCategory', required: true },
+    subcategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DoctorSubcategory' }],
     gender: { type: String,required: true, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
     licenseNumber: { type: String, required: true, trim: true, unique: true },
     experienceYears: { type: Number, min: 0 },
@@ -208,7 +209,7 @@ doctorSchema.methods.comparePassword = async function comparePassword(candidateP
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-doctorSchema.index({ specialization: 1, status: 1 });
+doctorSchema.index({ category: 1, status: 1 });
 doctorSchema.index({ 'clinicDetails.location': '2dsphere' });
 
 const Doctor = mongoose.model('Doctor', doctorSchema);

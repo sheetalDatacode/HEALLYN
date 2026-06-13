@@ -969,6 +969,131 @@ export const deleteBlog = async (blogId) => {
   }
 }
 
+/**
+ * Upload an image using Cloudinary
+ * @param {File} file 
+ * @returns {Promise<object>} Upload response with secure_url
+ */
+export const uploadImageToCloudinary = async (file) => {
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+    // We'll reuse an existing upload endpoint or we might have to use a generic upload
+    return await apiClient.upload('/admin/upload/image', formData)
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    throw error
+  }
+}
+
+/**
+ * Get doctor categories
+ */
+export const getDoctorCategories = async (filters = {}) => {
+  try {
+    return await apiClient.get('/admin/categories', filters)
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    throw error
+  }
+}
+
+/**
+ * Create doctor category
+ */
+export const createDoctorCategory = async (data) => {
+  try {
+    return await apiClient.post('/admin/categories', data)
+  } catch (error) {
+    console.error('Error creating category:', error)
+    throw error
+  }
+}
+
+/**
+ * Update doctor category
+ */
+export const updateDoctorCategory = async (id, data) => {
+  try {
+    return await apiClient.patch(`/admin/categories/${id}`, data)
+  } catch (error) {
+    console.error('Error updating category:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete doctor category
+ */
+export const deleteDoctorCategory = async (id) => {
+  try {
+    return await apiClient.delete(`/admin/categories/${id}`)
+  } catch (error) {
+    console.error('Error deleting category:', error)
+    throw error
+  }
+}
+
+/**
+ * Get doctor subcategories
+ */
+export const getDoctorSubcategories = async (filters = {}) => {
+  try {
+    return await apiClient.get('/admin/subcategories', filters)
+  } catch (error) {
+    console.error('Error fetching subcategories:', error)
+    throw error
+  }
+}
+
+/**
+ * Create doctor subcategory
+ */
+export const createDoctorSubcategory = async (data) => {
+  try {
+    return await apiClient.post('/admin/subcategories', data)
+  } catch (error) {
+    console.error('Error creating subcategory:', error)
+    throw error
+  }
+}
+
+/**
+ * Update doctor subcategory
+ */
+export const updateDoctorSubcategory = async (id, data) => {
+  try {
+    return await apiClient.patch(`/admin/subcategories/${id}`, data)
+  } catch (error) {
+    console.error('Error updating subcategory:', error)
+    throw error
+  }
+}
+
+/**
+ * Approve doctor subcategory
+ */
+export const approveDoctorSubcategory = async (id, data) => {
+  try {
+    return await apiClient.patch(`/admin/subcategories/${id}/approve`, data)
+  } catch (error) {
+    console.error('Error approving subcategory:', error)
+    throw error
+  }
+}
+
+/**
+ * Delete doctor subcategory
+ */
+export const deleteDoctorSubcategory = async (id) => {
+  try {
+    return await apiClient.delete(`/admin/subcategories/${id}`)
+  } catch (error) {
+    console.error('Error deleting subcategory:', error)
+    throw error
+  }
+}
+
 export default {
   loginAdmin,
   storeAdminTokens,

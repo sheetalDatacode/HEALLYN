@@ -128,6 +128,8 @@ import AdminNavbar from './modules/admin/admin-components/AdminNavbar'
 import AdminLogin from './modules/admin/admin-pages/AdminLogin'
 import AdminDashboard from './modules/admin/admin-pages/AdminDashboard'
 import AdminUsers from './modules/admin/admin-pages/AdminUsers'
+import AdminCategories from './modules/admin/admin-pages/AdminCategories'
+import AdminSubcategories from './modules/admin/admin-pages/AdminSubcategories'
 import AdminDoctors from './modules/admin/admin-pages/AdminDoctors'
 import AdminPharmacies from './modules/admin/admin-pages/AdminPharmacies'
 import AdminNurses from './modules/admin/admin-pages/AdminNurses'
@@ -246,6 +248,9 @@ function AdminRoutes() {
           <Route path="/revenue/:type" element={<ProtectedRoute module="admin"><AdminProviderRevenue /></ProtectedRoute>} />
           <Route path="/verification" element={<ProtectedRoute module="admin"><AdminVerification /></ProtectedRoute>} />
           <Route path="/appointments" element={<ProtectedRoute module="admin"><AdminAppointments /></ProtectedRoute>} />
+          <Route path="/categories" element={<ProtectedRoute module="admin"><AdminCategories /></ProtectedRoute>} />
+          <Route path="/subcategories" element={<ProtectedRoute module="admin"><AdminSubcategories /></ProtectedRoute>} />
+          <Route path="/doctors" element={<ProtectedRoute module="admin"><AdminDoctors /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute module="admin"><AdminOrders /></ProtectedRoute>} />
           <Route path="/request" element={<ProtectedRoute module="admin"><AdminRequests /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute module="admin"><AdminProfile /></ProtectedRoute>} />

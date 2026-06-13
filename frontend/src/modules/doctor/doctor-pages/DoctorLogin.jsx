@@ -121,14 +121,41 @@ const DoctorLogin = () => {
   // OTP input refs
   const otpInputRefs = useRef([])
 
-  // Specialization dropdown state (for doctor)
-  const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false)
-  const [specializationSearchTerm, setSpecializationSearchTerm] = useState('')
-  const [availableSpecializations, setAvailableSpecializations] = useState([])
-  const specializationInputRef = useRef(null)
-  const specializationDropdownRef = useRef(null)
+  // Category and Subcategory state
+  const [categories, setCategories] = useState([])
+  const [subcategories, setSubcategories] = useState([])
+  
+  // Fetch categories and subcategories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/doctor-categories');
+        const data = await response.json();
+        if (data.success) {
+          setCategories(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
 
+    const fetchSubcategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/doctor-subcategories');
+        const data = await response.json();
+        if (data.success) {
+          setSubcategories(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch subcategories:', error);
+      }
+    };
 
+    if (selectedModule === 'doctor') {
+      fetchCategories();
+      fetchSubcategories();
+    }
+  }, [selectedModule]);
 
   // Doctor signup state
   const initialDoctorSignupState = {
@@ -136,7 +163,8 @@ const DoctorLogin = () => {
     lastName: '',
     email: '',
     phone: '',
-    specialization: '',
+    category: '',
+    subcategories: [],
     gender: '',
     licenseNumber: '',
     experienceYears: '',
@@ -681,21 +709,24 @@ const DoctorLogin = () => {
       return
     }
 
-    // Handle specialization with dropdown
-    if (name === 'specialization') {
+    // Handle category with dropdown
+    if (name === 'category') {
       setDoctorSignupData((prev) => ({
         ...prev,
-        specialization: value,
+        category: value,
+        subcategories: [], // Reset subcategories when category changes
       }))
-      // Update search term to match what user is typing
-      setSpecializationSearchTerm(value)
-      // Show dropdown if there's a search term or if specializations are available
-      if (value.trim() || availableSpecializations.length > 0) {
-        setShowSpecializationDropdown(true)
-      } else {
-        setShowSpecializationDropdown(false)
-      }
       return
+    }
+
+    if (name === 'subcategories') {
+       // Value is handled directly in the DoctorSignupForm component logic, 
+       // but we add it here just in case.
+       setDoctorSignupData((prev) => ({
+          ...prev,
+          subcategories: value
+       }))
+       return
     }
 
     // Restrict phone to 10 digits only
@@ -1733,6 +1764,8 @@ const DoctorLogin = () => {
                 availableSpecializations={availableSpecializations}
                 filteredSpecializations={filteredSpecializations}
                 specializationInputRef={specializationInputRef}
+                categories={categories}
+                subcategories={subcategories}
                 addEducationEntry={addEducationEntry}
                 removeEducationEntry={removeEducationEntry}
                 removeLanguage={removeLanguage}

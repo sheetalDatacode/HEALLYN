@@ -51,7 +51,8 @@ exports.registerDoctor = asyncHandler(async (req, res) => {
     email,
     phone,
     gender,
-    specialization,
+    category,
+    subcategories,
     licenseNumber,
     experienceYears,
     experience,
@@ -77,10 +78,10 @@ exports.registerDoctor = asyncHandler(async (req, res) => {
 
   const resolvedName = parseName({ name, firstName, lastName });
 
-  if (!resolvedName.firstName || !email || !phone || !specialization || !licenseNumber) {
+  if (!resolvedName.firstName || !email || !phone || !category || !licenseNumber) {
     return res.status(400).json({
       success: false,
-      message: 'Required fields missing. Provide name/firstName, email, phone, specialization, and license number.',
+      message: 'Required fields missing. Provide name/firstName, email, phone, category, and license number.',
     });
   }
 
@@ -368,12 +369,39 @@ exports.registerDoctor = asyncHandler(async (req, res) => {
     }
   }
 
+  // Handle dynamic subcategories ("Other" option)
+  const processedSubcategories = [];
+  if (subcategories && Array.isArray(subcategories)) {
+    const DoctorSubcategory = require('../../models/DoctorSubcategory');
+    for (const sub of subcategories) {
+      if (typeof sub === 'string' && sub.length > 0) {
+        // Check if it's a valid ObjectId
+        if (sub.match(/^[0-9a-fA-F]{24}$/)) {
+          processedSubcategories.push(sub);
+        } else {
+          // It's a new symptom name, create a new subcategory (unapproved)
+          try {
+            const newSub = await DoctorSubcategory.create({
+              name: sub,
+              category,
+              isApproved: false, // Needs admin approval
+            });
+            processedSubcategories.push(newSub._id);
+          } catch (err) {
+            console.error('Error creating dynamic subcategory:', err);
+          }
+        }
+      }
+    }
+  }
+
   const doctor = await Doctor.create({
     firstName: resolvedName.firstName,
     lastName: resolvedName.lastName || '',
     email,
     phone,
-    specialization,
+    category,
+    subcategories: processedSubcategories,
     licenseNumber,
     gender,
     experienceYears: experienceYears ?? experience,
@@ -417,7 +445,7 @@ exports.registerDoctor = asyncHandler(async (req, res) => {
         userType: 'admin',
         type: 'system',
         title: 'New Doctor Registration',
-        message: `Dr. ${doctorName} (${doctor.specialization || 'General'}) has registered and is awaiting approval. License: ${doctor.licenseNumber || 'N/A'}`,
+        message: `Dr. ${doctorName} has registered and is awaiting approval. License: ${doctor.licenseNumber || 'N/A'}`,
         data: {
           providerId: doctor._id,
           providerType: 'doctor',
@@ -425,7 +453,7 @@ exports.registerDoctor = asyncHandler(async (req, res) => {
           email: doctor.email,
           phone: doctor.phone,
           licenseNumber: doctor.licenseNumber,
-          specialization: doctor.specialization,
+          category: doctor.category,
           address: doctor.clinicDetails?.address || null,
           registrationDate: doctor.createdAt,
         },
